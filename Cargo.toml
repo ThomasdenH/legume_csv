@@ -1,0 +1,28 @@
+[package]
+name = "csv_to_beancount"
+description = "A tool to convert csv to beancount files"
+version = "0.1.0"
+authors = ["Thomas <denhollander.thomas@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+structopt = "0.3"
+rust_decimal = "1"
+chrono = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.8"
+csv = "1"
+handlebars = "3"
+thiserror = "1"
+anyhow = "1"
+
+[dependencies.beancount-core]
+git = "https://github.com/twilco/beancount.git"
+features = ["chrono"]
+rev = "50363f2ebc0c3c4fd6fee0fac43a9123e7bca4e5"
+
+[dependencies.beancount-render]
+git = "https://github.com/twilco/beancount.git"
+rev = "50363f2ebc0c3c4fd6fee0fac43a9123e7bca4e5"

@@ -1,0 +1,21 @@
+# A configuration to process csv files from the Dutch ASN-bank
+input:
+  # Define variables here that can be used later on
+  date: 0
+  currency: 7
+  payee: 3
+  narration: 17
+  amount: 10
+output:
+  flag: "*"
+  date: "{{date}}"
+  payee: "{{payee}}"
+  narration: "{{narration}}"
+  postings:
+    - account: "Assets::Checking"
+      amount: "{{amount}} {{currency}}"
+    - account: "Expenses::Unbalanced"
+      flag: "!"
+settings:
+  quote: "'"
+  date_format: "%d-%m-%Y"
