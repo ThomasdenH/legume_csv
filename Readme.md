@@ -1,4 +1,6 @@
 # legume_csv
+[![Actions Status](https://github.com/ThomasdenH/legume_csv/workflows/Rust/badge.svg)](https://github.com/ThomasdenH/legume_csv/actions)
+
 A tool to create beancount files from csv files.
 
 To work, it requires an input file (`--ledger`, `-l`) and a configuration (`--config`, `-c`). Optionally, you can use `--append` to specify a file to which the new entries will be appended.
