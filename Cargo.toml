@@ -1,9 +1,13 @@
 [package]
-name = "csv_to_beancount"
-description = "A tool to convert csv to beancount files"
+name = "legume_csv"
+description = "A tool to convert csv to beancount files."
 version = "0.1.0"
-authors = ["Thomas <denhollander.thomas@gmail.com>"]
+authors = ["Thomas den Hollander <denhollander.thomas@gmail.com>"]
 edition = "2018"
+repository = "https://github.com/ThomasdenH/legume_csv"
+license = "MIT OR Apache-2.0"
+readme = "Readme.md"
+include = ["src/**/*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -1,3 +1,11 @@
+//! Create a beancount ledger from an csv file.
+
+#![forbid(unsafe_code)]
+#![deny(missing_docs)]
+#![deny(bare_trait_objects)]
+#![deny(elided_lifetimes_in_paths)]
+#![deny(missing_debug_implementations)]
+
 use beancount_core::{Account, Amount, Flag, IncompleteAmount, Posting, Transaction};
 use beancount_render::{BasicRenderer, Renderer};
 use chrono::NaiveDate;
@@ -13,7 +21,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use thiserror::*;
 
-/// 
+/// An error that can occur when processing a transaction.
 #[derive(Debug, Error)]
 enum TransactionError {
     #[error("invalid account")]
@@ -26,6 +34,7 @@ enum TransactionError {
     DateParseError(#[from] chrono::format::ParseError),
 }
 
+/// Any error that can occur in the application.
 #[derive(Debug, Error)]
 enum Error {
     #[error("an error occurred processing a transaction")]
@@ -38,26 +47,35 @@ enum Error {
     Yaml(#[from] serde_yaml::Error),
 }
 
+/// A tool to convert csv to beancount files.
+///
+/// To work, it requires an input file (`--ledger`, `-l`) and a configuration (`--config`, `-c`).
+/// Optionally, you can use `--append` to specify a file to which the new entries will be appended.
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "csv_to_beancount",
     about = "convert transactions in CSV to beancount format"
 )]
 struct Opt {
+    /// The ledger in csv format to convert to Beancount.
     #[structopt(long = "ledger", short = "l")]
     csv_path: PathBuf,
+    /// The configuration to use which specifies how to interpret the csv file.
     #[structopt(long = "config", short = "c")]
     yaml_path: PathBuf,
+    /// If supplied, the new entries will be appended to this file.
     #[structopt(long = "append")]
     append_path: Option<PathBuf>,
 }
 
+/// The configuration used to convert the ledger entries.
 #[derive(Debug, Deserialize)]
-struct YamlConfig {
+struct Configuration {
     /// The keyed inputs from the csv.
     input: HashMap<String, usize>,
-    settings: YamlSettings,
-    output: YamlOutput,
+    /// The settings for the Yaml.
+    settings: Settings,
+    output: TransactionTemplate,
 }
 
 const fn default_delimiter() -> char {
@@ -68,8 +86,9 @@ const fn default_quote() -> char {
     '\''
 }
 
+/// Settings for the yaml file.
 #[derive(Debug, Deserialize)]
-struct YamlSettings {
+struct Settings {
     #[serde(default = "default_delimiter")]
     delimiter: char,
     #[serde(default = "default_quote")]
@@ -93,7 +112,7 @@ fn default_transaction_flag() -> String {
 }
 
 #[derive(Debug, Deserialize)]
-struct YamlOutput {
+struct TransactionTemplate {
     date: String,
     #[serde(default = "default_transaction_flag")]
     flag: String,
@@ -103,7 +122,7 @@ struct YamlOutput {
 }
 
 /// Generate an `IncompleteAmount` from a string in the format "{{amount}} {{currency}}".
-fn incomplete_amount_from_str(s: String) -> Result<IncompleteAmount<'static>, TransactionError> {
+fn incomplete_amount_from_string(s: String) -> Result<IncompleteAmount<'static>, TransactionError> {
     let mut split = s.split(' ');
     let value = split
         .next()
@@ -122,7 +141,7 @@ fn incomplete_amount_from_str(s: String) -> Result<IncompleteAmount<'static>, Tr
         .into())
 }
 
-fn account_from_str(s: String) -> Result<Account<'static>, TransactionError> {
+fn account_from_string(s: String) -> Result<Account<'static>, TransactionError> {
     let mut parts = s.split(':');
     use beancount_core::account_types::AccountType::*;
     let account_type = match parts.next().ok_or(TransactionError::InvalidAccount)? {
@@ -139,16 +158,17 @@ fn account_from_str(s: String) -> Result<Account<'static>, TransactionError> {
 
 fn build_posting<'a>(
     posting_template: &'a YamlPosting,
-    handlebars: &Handlebars,
+    handlebars: &Handlebars<'_>,
     data: &HashMap<&str, &str>,
 ) -> Result<Posting<'a>, TransactionError> {
-    let account = account_from_str(handlebars.render_template(&posting_template.account, &data)?)?;
+    let account =
+        account_from_string(handlebars.render_template(&posting_template.account, &data)?)?;
     let units = posting_template
         .amount
         .as_ref()
         .map(|cost| handlebars.render_template(&cost, &data))
         .transpose()?
-        .map(incomplete_amount_from_str)
+        .map(incomplete_amount_from_string)
         .transpose()?
         .unwrap_or_else(|| IncompleteAmount::builder().build());
     let flag = posting_template
@@ -163,7 +183,7 @@ fn build_posting<'a>(
         .as_ref()
         .map(|price| handlebars.render_template(&price, &data))
         .transpose()?
-        .map(incomplete_amount_from_str)
+        .map(incomplete_amount_from_string)
         .transpose()?;
 
     Ok(Posting::builder()
@@ -176,8 +196,8 @@ fn build_posting<'a>(
 
 fn build_transaction<'a>(
     record: csv::StringRecord,
-    config: &'a YamlConfig,
-    handlebars: &Handlebars,
+    config: &'a Configuration,
+    handlebars: &Handlebars<'_>,
 ) -> Result<Transaction<'a>, TransactionError> {
     let data: HashMap<&str, &str> = config
         .input
@@ -203,7 +223,7 @@ fn build_transaction<'a>(
 
     let narration = handlebars.render_template(&config.output.narration, &data)?;
 
-    let postings: Vec<Posting> = config
+    let postings: Vec<Posting<'_>> = config
         .output
         .postings
         .iter()
@@ -222,7 +242,7 @@ fn build_transaction<'a>(
 fn main() -> Result<(), anyhow::Error> {
     let opt = Opt::from_args();
 
-    let config: YamlConfig = {
+    let config: Configuration = {
         let yaml_file = std::fs::File::open(&opt.yaml_path)?;
         serde_yaml::from_reader(yaml_file)?
     };

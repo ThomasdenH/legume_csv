@@ -159,23 +159,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "csv_to_beancount"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "beancount-core",
- "beancount-render",
- "chrono",
- "csv",
- "handlebars",
- "rust_decimal",
- "serde",
- "serde_yaml",
- "structopt",
- "thiserror",
-]
-
-[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -248,6 +231,23 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+
+[[package]]
+name = "legume_csv"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beancount-core",
+ "beancount-render",
+ "chrono",
+ "csv",
+ "handlebars",
+ "rust_decimal",
+ "serde",
+ "serde_yaml",
+ "structopt",
+ "thiserror",
+]
 
 [[package]]
 name = "libc"
